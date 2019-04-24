@@ -36,8 +36,8 @@ class ShapeAnalysisModule(ScriptedLoadableModule):
 
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "Shape Analysis Module"
-    self.parent.categories = ["SPHARM"]
+    self.parent.title = "SPHARM-PDM Generator"
+    self.parent.categories = ["Shape Creation"]
     self.parent.dependencies = []
     self.parent.contributors = ["Laura Pascal (Kitware Inc.), Beatriz Paniagua (Kitware Inc.), Hina Shah (Kitware Inc.)"]
     self.parent.helpText = """
