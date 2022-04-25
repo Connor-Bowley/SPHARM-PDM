@@ -75,23 +75,23 @@ vtkPolyDataToitkMesh
   //
   vtkSmartPointer<vtkCellArray> triangleStrips = m_PolyData->GetStrips();
 
-  vtkIdType*  cellPoints;
-  vtkIdType   numberOfCellPoints;
+
+  vtkIdType numberOfCellPoints;
 
   //
   // First count the total number of triangles from all the triangle strips.
   //
   unsigned int numberOfTriangles = 0;
 
-  triangleStrips->InitTraversal();
+  /*triangleStrips->InitTraversal();
   while( triangleStrips->GetNextCell( numberOfCellPoints, cellPoints ) )
     {
     numberOfTriangles += numberOfCellPoints - 2;
-    }
+  }*/
 
   vtkSmartPointer<vtkCellArray> polygons = m_PolyData->GetPolys();
 
-  polygons->InitTraversal();
+  /*polygons->InitTraversal();
 
   while( polygons->GetNextCell( numberOfCellPoints, cellPoints ) )
     {
@@ -99,7 +99,25 @@ vtkPolyDataToitkMesh
       {
       numberOfTriangles++;
       }
+    }*/
+
+    vtkIdType cellSizes = 0;
+    for (vtkIdType i=0;i<triangleStrips->GetNumberOfCells(); i++)
+    {
+      numberOfTriangles+=triangleStrips->GetCellSize(i);
+      if (triangleStrips->GetCellSize(i) > cellSizes)
+        cellSizes = triangleStrips->GetCellSize(i);
     }
+
+    for (vtkIdType i=0;i<polygons->GetNumberOfCells(); i++)
+    {
+      if (polygons->GetCellSize(i) == 3)
+        numberOfTriangles++;
+
+      if (polygons->GetCellSize(i) > cellSizes)
+        cellSizes = polygons->GetCellSize(i);
+    }
+
 
   //
   // Reserve memory in the itk::Mesh for all those triangles
@@ -115,17 +133,19 @@ vtkPolyDataToitkMesh
 
   typedef itk::TriangleCell<CellType> TriangleCellType;
 
+  vtkNew<vtkIdList> cellPoints;
+
   // first copy the triangle strips
   int cellId = 0;
   triangleStrips->InitTraversal();
-  while( triangleStrips->GetNextCell( numberOfCellPoints, cellPoints ) )
+  while( numberOfCellPoints = triangleStrips->GetNextCell( cellPoints ) )
     {
     unsigned int numberOfTrianglesInStrip = numberOfCellPoints - 2;
 
     uint64_t pointIds[3];
-    pointIds[0] = cellPoints[0];
-    pointIds[1] = cellPoints[1];
-    pointIds[2] = cellPoints[2];
+    pointIds[0] = cellPoints->GetId(0);
+    pointIds[1] = cellPoints->GetId(1);
+    pointIds[2] = cellPoints->GetId(2);
     for( unsigned int t = 0; t < numberOfTrianglesInStrip; t++ )
       {
       TriangleMeshType::CellAutoPointer c;
@@ -141,14 +161,14 @@ vtkPolyDataToitkMesh
       cellId++;
       pointIds[0] = pointIds[1];
       pointIds[1] = pointIds[2];
-      pointIds[2] = cellPoints[t + 3];
+      pointIds[2] = cellPoints->GetId(t+3);
       }
 
     }
 
   // then copy the triangles
   polygons->InitTraversal();
-  while( polygons->GetNextCell( numberOfCellPoints, cellPoints ) )
+  while( numberOfCellPoints = polygons->GetNextCell( cellPoints ) )
     {
     if( numberOfCellPoints != 3 ) // skip any non-triangle.
       {
@@ -159,7 +179,7 @@ vtkPolyDataToitkMesh
     TriangleCellType::PointIdentifier itkPts[3];
     for (int ii = 0; ii < numberOfCellPoints; ++ii)
       {
-      itkPts[ii] = static_cast<TriangleCellType::PointIdentifier>(cellPoints[ii]);
+      itkPts[ii] = static_cast<TriangleCellType::PointIdentifier>(cellPoints->GetId(ii));
       }
     t->SetPointIds( itkPts );
     c.TakeOwnership( t );
